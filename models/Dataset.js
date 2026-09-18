@@ -8,7 +8,8 @@ const datasetSchema = new mongoose.Schema({
   recordCount: { type: Number, default: 0 },
   missingValues: { type: Number, default: 0 },
   dataQualityScore: { type: Number, default: 95 },
-  dataPreview: { type: mongoose.Schema.Types.Mixed, default: [] }
+  dataPreview: { type: mongoose.Schema.Types.Mixed, default: [] },
+  uploadedBy: { type: String, trim: true, index: true, default: "" }
 }, {
   timestamps: true
 });

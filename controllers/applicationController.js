@@ -5,14 +5,37 @@ exports.getApplications = async (req, res) => {
     const list = await StudentApplication.find({}).sort({ createdAt: -1 });
     return res.status(200).json(list);
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.warn("⚠️ Applications DB query fallback:", error.message);
+    return res.status(200).json([]);
   }
 };
 
 exports.createApplication = async (req, res) => {
   try {
     const body = req.body;
-    const id = body.id || `app_${Date.now()}_${Math.floor(Math.random()*1000)}`;
+    const studentId = body.studentId;
+    const registerNumber = body.registerNumber;
+    const companyId = body.companyId;
+
+    // Check if application already exists for student and company
+    let existing = null;
+    if (studentId && companyId) {
+      existing = await StudentApplication.findOne({ studentId, companyId });
+    }
+    if (!existing && registerNumber && companyId) {
+      existing = await StudentApplication.findOne({ registerNumber, companyId });
+    }
+
+    if (existing) {
+      const updated = await StudentApplication.findOneAndUpdate(
+        { id: existing.id },
+        { ...body, status: body.status || existing.status },
+        { new: true }
+      );
+      return res.status(200).json(updated);
+    }
+
+    const id = body.id || `app_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const app = await StudentApplication.create({
       ...body,
       id

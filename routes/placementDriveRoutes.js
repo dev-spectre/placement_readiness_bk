@@ -4,6 +4,7 @@ const placementDriveController = require("../controllers/placementDriveControlle
 
 router.get("/", placementDriveController.getPlacementDrives);
 router.post("/publish", placementDriveController.publishPlacementDrive);
+router.post("/test-email", placementDriveController.testSendGridEmail);
 router.delete("/:id", placementDriveController.deletePlacementDrive);
 
 module.exports = router;

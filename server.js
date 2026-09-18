@@ -10,10 +10,19 @@ console.log("PORT =", PORT);
 console.log("MONGODB_URI =", process.env.MONGODB_URI ? "Loaded ✅" : "Missing ❌");
 console.log("JWT_SECRET =", process.env.JWT_SECRET ? "Loaded ✅" : "Missing ❌");
 
-connectDB().then(() => {
-  seedDatabase();
-});
+async function startServer() {
+  try {
+    const connected = await connectDB();
+    if (connected) {
+      await seedDatabase().catch((err) => console.error("Seeding error:", err));
+    }
+  } catch (err) {
+    console.error("Database connection warning:", err.message);
+  }
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();

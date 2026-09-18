@@ -37,7 +37,8 @@ const studentSchema = new mongoose.Schema({
   aptitudeHistory: { type: [mongoose.Schema.Types.Mixed], default: [] },
   avatarUrl: { type: String, default: "" },
   resumeScore: { type: Number, default: 75 },
-  faculty: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty" }
+  faculty: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty" },
+  uploadedBy: { type: String, trim: true, index: true, default: "" }
 }, {
   timestamps: true
 });

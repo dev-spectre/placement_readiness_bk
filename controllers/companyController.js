@@ -5,7 +5,8 @@ exports.getCompanies = async (req, res) => {
     const companies = await Company.find({}).sort({ createdAt: -1 });
     return res.status(200).json(companies);
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.warn("⚠️ Companies DB query fallback:", error.message);
+    return res.status(200).json([]);
   }
 };
 

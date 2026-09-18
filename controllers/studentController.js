@@ -162,10 +162,15 @@ function getStudentInsights(student) {
 // -------------------------------------------------------------
 exports.getAllStudents = async (req, res) => {
   try {
-    const students = await Student.find({}).sort({ createdAt: -1 });
+    const filter = {};
+    if (req.query.uploadedBy) {
+      filter.uploadedBy = req.query.uploadedBy.trim();
+    }
+    const students = await Student.find(filter).sort({ createdAt: -1 });
     return res.status(200).json(students);
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.warn("⚠️ Students DB query fallback:", error.message);
+    return res.status(200).json([]);
   }
 };
 
@@ -368,6 +373,12 @@ exports.importPreview = async (req, res) => {
         isRowValid = false;
       }
 
+      const email = String(parsedRow.email || "").trim();
+      if (!email || !email.includes("@")) {
+        validationErrors.push({ row: rowNum, field: "Gmail / Email", value: email || "Missing", problem: "Need Gmail / Enter Mail: Valid student email address is required" });
+        isRowValid = false;
+      }
+
       if (rawCgpa !== undefined && rawCgpa !== null && rawCgpa !== "") {
         const numCgpa = parseFloat(String(rawCgpa).replace(/[^0-9.]/g, ""));
         if (isNaN(numCgpa) || numCgpa < 0 || numCgpa > 10) {
@@ -505,7 +516,8 @@ exports.importConfirm = async (req, res) => {
         certifications: certifications,
         internships: internships,
         projects: projects,
-        placementStatus: String(mapped.placementStatus || "Eligible").trim()
+        placementStatus: String(mapped.placementStatus || "Eligible").trim(),
+        uploadedBy: String(uploadedBy || req.user?.email || "Faculty").trim()
       };
 
       studentDoc.readinessScore = calculateReadinessScore(studentDoc);
