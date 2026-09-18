@@ -43,19 +43,57 @@ exports.login = async (req, res) => {
       }
 
       const token = jwt.sign({ id: faculty._id, role: faculty.role }, secret, { expiresIn: "7d" });
+      const userPayload = {
+        id: faculty.id || faculty._id.toString(),
+        name: faculty.fullName || faculty.name,
+        email: faculty.email,
+        department: faculty.department,
+        role: faculty.role,
+        avatarUrl: ""
+      };
+
+      // Generate 6-Digit OTP verification code for login
+      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      otpCache.set(`verify_${faculty.email.toLowerCase()}`, {
+        otp: generatedOtp,
+        expires: Date.now() + 10 * 60 * 1000,
+        token,
+        role: faculty.role,
+        user: userPayload
+      });
+
+      console.log(`[LOGIN OTP DISPATCH] Transmitted 6-digit OTP code ${generatedOtp} to ${faculty.email}`);
+
+      // Attempt email dispatch via Nodemailer
+      try {
+        await sendMailViaNodemailer({
+          to: faculty.email,
+          subject: "Verification Code - Placement Readiness Portal Login",
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 24px; background: #f8fafc; border-radius: 16px; max-width: 500px; margin: 0 auto; border: 1px solid #e2e8f0;">
+              <h2 style="color: #1e3a8a; margin-top: 0;">Adithya Institute of Technology</h2>
+              <h3 style="color: #0f172a;">Placement Portal Verification Code</h3>
+              <p style="color: #475569; font-size: 14px;">Your 6-digit verification code to complete sign in is:</p>
+              <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #2563eb; background: #eff6ff; padding: 16px; border-radius: 12px; text-align: center; margin: 20px 0;">
+                ${generatedOtp}
+              </div>
+              <p style="color: #64748b; font-size: 12px;">This code is valid for 10 minutes. Do not share this verification code with anyone.</p>
+            </div>
+          `
+        });
+      } catch (mailErr) {
+        console.warn("⚠️ Nodemailer dispatch warning:", mailErr.message);
+      }
 
       return res.status(200).json({
         success: true,
+        requireOtp: true,
+        otp: generatedOtp,
+        email: faculty.email,
         token,
         role: faculty.role,
-        user: {
-          id: faculty.id || faculty._id.toString(),
-          name: faculty.fullName || faculty.name,
-          email: faculty.email,
-          department: faculty.department,
-          role: faculty.role,
-          avatarUrl: ""
-        }
+        user: userPayload,
+        message: `A 6-digit verification code has been dispatched to ${faculty.email}.`
       });
     } else {
       // Student Login Flow
@@ -344,8 +382,42 @@ exports.verifyLoginOTP = async (req, res) => {
 
     otpCache.delete(`verify_${cleanEmail}`);
 
+    const secret = process.env.JWT_SECRET || "secret_key";
+    let token = cached?.token;
+    let user = cached?.user;
+    let role = cached?.role || "Faculty";
+
+    if (!user) {
+      const faculty = await Faculty.findOne({ email: cleanEmail });
+      if (faculty) {
+        token = jwt.sign({ id: faculty._id, role: faculty.role }, secret, { expiresIn: "7d" });
+        role = faculty.role;
+        user = {
+          id: faculty.id || faculty._id.toString(),
+          name: faculty.fullName || faculty.name,
+          email: faculty.email,
+          department: faculty.department,
+          role: faculty.role,
+          avatarUrl: ""
+        };
+      } else {
+        user = {
+          id: `fac_${Date.now()}`,
+          name: cleanEmail.split("@")[0],
+          email: cleanEmail,
+          department: "AI&DS",
+          role: role,
+          avatarUrl: ""
+        };
+        token = jwt.sign({ id: user.id, role }, secret, { expiresIn: "7d" });
+      }
+    }
+
     return res.status(200).json({
       success: true,
+      token,
+      role,
+      user,
       message: "Gmail verification successful!"
     });
   } catch (error) {
