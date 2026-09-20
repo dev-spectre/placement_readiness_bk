@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+require('node:dns').setDefaultResultOrder('ipv4first');
+
 
 /**
  * Dynamically evaluate email environment settings on each invocation
