@@ -56,6 +56,8 @@ async function createTransporter(type, config) {
     return nodemailer.createTransport({
       service: 'gmail',
       auth: authObj,
+      secure: true,
+      port: 465,
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 10000
@@ -71,6 +73,8 @@ async function createTransporter(type, config) {
           user: config.smtpUser,
           pass: config.smtpPass
         },
+        port: 465,
+        secure: true,
         connectionTimeout: 10000,
         greetingTimeout: 10000,
         socketTimeout: 10000
@@ -84,6 +88,8 @@ async function createTransporter(type, config) {
           user: config.smtpUser,
           pass: config.smtpPass
         },
+        port: 465,
+        secure: true,
         connectionTimeout: 10000,
         greetingTimeout: 10000,
         socketTimeout: 10000
